@@ -30,7 +30,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026070103;        // YYYYMMDDXX format.
+$plugin->version   = 2026070104;        // YYYYMMDDXX format.
 $plugin->requires  = 2023042400;        // Moodle 4.2+ (core_external namespace).
 $plugin->component = 'local_litert_edge';
 $plugin->maturity  = MATURITY_ALPHA;
