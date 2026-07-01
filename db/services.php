@@ -54,14 +54,6 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/assign:grade',
     ],
-    'local_litert_edge_reset_ai_grades' => [
-        'classname'    => 'local_litert_edge\external\reset_ai_grades',
-        'methodname'   => 'execute',
-        'description'  => 'Undoes rubric grading for an assignment (deletes fillings, feedback, resets grades).',
-        'type'         => 'write',
-        'ajax'         => true,
-        'capabilities' => 'mod/assign:grade',
-    ],
 ];
 
 $services = [
@@ -71,7 +63,6 @@ $services = [
             'local_litert_edge_get_grading_data',
             'local_litert_edge_save_ai_grade',
             'local_litert_edge_get_grading_queue',
-            'local_litert_edge_reset_ai_grades',
         ],
         'restrictedusers' => 0,
         'enabled'         => 1,
