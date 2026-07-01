@@ -1,61 +1,68 @@
-# local_litert_edge — LiteRT Edge grading bridge
+# moodle-local_litert_edge
 
-The Moodle half of **LiteRT Edge**. It lets the LiteRT Edge Chrome extension
-grade assignment submissions with an on-device AI model, by exposing two
-web-service endpoints:
+The **Moodle side** of LiteRT Edge — on-device AI grading for Moodle assignments.
 
-- `local_litert_edge_get_grading_data` — returns the rubric definition + the
-  student's submission text (read).
-- `local_litert_edge_save_ai_grade` — validates the AI's rubric selections
-  against the real rubric and writes the grade to the gradebook (write).
+This plugin performs **no AI**. It exposes three web-service endpoints that a
+companion Chrome extension calls to read the rubric + submission and to save the
+AI-produced grade. All model inference runs in the teacher's browser on their own
+GPU. The plugin requires no HTTPS or special configuration.
 
-The plugin does **no** AI inference and stores no data of its own. It requires
-no HTTPS or cross-origin isolation — all model work happens in the teacher's
-browser extension. It is fully self-contained (no dependency on other plugins).
+👉 Client half (the browser extension that runs the model):
+[litert-edge-extension](https://github.com/Hamza-Walker/litert-edge-extension).
 
-## Install
+---
 
-Site administration → Plugins → Install plugins → upload this ZIP → Upgrade.
-(Or copy the `litert_edge` folder into `MOODLE_ROOT/local/` and visit the site
-as admin to complete the upgrade.)
+## What it provides
 
-## How it's used
+| Web-service function | Type | Purpose |
+|---|---|---|
+| `local_litert_edge_get_grading_data` | read | Returns the rubric (criteria + levels), the submission text (online text, with a plain-text file fallback), the assignment name, and any grading instructions. |
+| `local_litert_edge_save_ai_grade` | write | Re-validates the AI's rubric selections against the real rubric, writes the grade to the gradebook, and saves an optional feedback comment. |
+| `local_litert_edge_get_grading_queue` | read | Lists submitted students (and whether already graded) for batch grading. |
 
-1. Install the companion **LiteRT Edge Chrome extension** and set up its model
-   (its Setup page: pick model → Download & set up → Ready).
-2. Create/settle an assignment whose **Grading method = Rubric**, with a
-   student submission.
-3. As a teacher, open the grading screen
-   (`/mod/assign/view.php?id=<cmid>&action=grader&userid=<userid>`). A floating
-   **"Grade with AI (on-device)"** button appears (added by the extension).
-4. Click it: the extension reads the rubric + submission via
-   `get_grading_data`, runs the model on the teacher's GPU, then posts the
-   result to `save_ai_grade`, which validates and saves the grade.
+All three are AJAX-callable (the extension's content script calls them
+same-origin with the teacher's session) and require the `mod/assign:grade`
+capability.
 
 ## Security
 
-- Both endpoints require the `mod/assign:grade` capability and validate the
-  module context.
-- The AI output is untrusted: `save_ai_grade` re-checks every
-  `criterionid`/`levelid` against the assignment's real rubric and drops
-  anything invented before saving.
+The AI output is treated as **untrusted**: `save_ai_grade` re-checks every
+`criterionid`/`levelid` against the assignment's real rubric and drops anything
+invented before saving. Every endpoint validates the module context and the
+`mod/assign:grade` capability. The plugin stores no personal data of its own
+(null privacy provider).
+
+## Install
+
+- **Manual:** copy this repo's contents into `MOODLE_ROOT/local/litert_edge/`,
+  then visit the site as admin to complete the upgrade.
+- **This project (Docker auto-pull):** the repo is bind-mounted into the
+  container at `local/litert_edge`. To update:
+  ```bash
+  cd ~/docker/moodle-local_litert_edge && git pull
+  ```
+  If you change PHP, bump `$plugin->version` in `version.php` so Moodle runs its
+  upgrade at the next admin page load.
 
 ## Requirements
 
-- Moodle 4.2+.
-- Assignment configured with a **rubric** advanced-grading method.
-- Submission via **Online text** (a plain-text file submission is used as a
-  fallback if there is no online text).
+- Moodle **4.2+** (uses the `core_external` namespace).
+- Assignment with **Grading method = Rubric**.
+- The companion Chrome/Edge extension installed in the teacher's browser.
 
 ## Files
 
 ```
-litert_edge/
-├── version.php
-├── settings.php                         Admin info page (no options to set)
-├── db/services.php                      Web-service functions + named service
-├── classes/external/get_grading_data.php
-├── classes/external/save_ai_grade.php   Self-contained rubric-grade save
-├── classes/privacy/provider.php         Null provider (stores nothing)
-└── lang/en/local_litert_edge.php
+version.php                         Plugin identity & version
+settings.php                        Admin info page (no configurable options)
+db/services.php                     Web-service function + external service definitions
+classes/external/get_grading_data.php
+classes/external/get_grading_queue.php
+classes/external/save_ai_grade.php
+classes/privacy/provider.php        Null privacy provider (stores nothing)
+lang/en/local_litert_edge.php       Language strings
 ```
+
+## License
+
+GPL v3 or later.
